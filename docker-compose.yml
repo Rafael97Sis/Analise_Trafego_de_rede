@@ -1,0 +1,21 @@
+services:
+  analyzer:
+    build:
+      context: .
+      args:
+        INSTALL_DEV: "true"   # inclui pytest para rodar os testes no container
+    image: traffic-analyzer:latest
+    # Compartilha a pilha de rede do host: o container enxerga as interfaces
+    # reais da máquina (eth0, wlan0, ...) em vez de só a sua veth isolada.
+    network_mode: host
+    # Permissões mínimas para captura, em vez de privileged: true.
+    cap_add:
+      - NET_RAW     # abrir raw sockets (AF_PACKET)
+      - NET_ADMIN   # colocar a interface em modo promíscuo
+    volumes:
+      - ./data:/data          # banco SQLite persistido no host
+    environment:
+      - DB_PATH=/data/traffic.db
+      - INTERFACE=${INTERFACE:-}
+    stop_signal: SIGTERM
+    stop_grace_period: 15s    # tempo para gravar o último lote no banco
